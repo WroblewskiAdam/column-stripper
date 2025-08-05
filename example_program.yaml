@@ -1,0 +1,35 @@
+reagents:
+  1: reagent_a
+  2: reagent_b
+  3: reagent_c
+  4: reagent_d
+  5: reagent_e
+  6: reagent_f
+
+columns:
+  1: column_1
+  2: column_2
+  3: column_3
+  4: column_4
+  5: column_5
+  6: column_6
+
+
+program:
+  - flush:
+      reagent: reagent_a
+      column: column_1
+      flow_rate: 0.5ml/min
+      duration: 10s
+  - flush:
+      reagent: reagent_b
+      column: column_2
+      flow_rate: 0.2ml/min
+      duration: 10s
+  - sleep:
+      duration: 15s
+  - flush:
+      reagent: reagent_c
+      column: column_3
+      flow_rate: 0.1ml/min
+      duration: 10s
