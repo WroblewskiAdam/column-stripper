@@ -174,6 +174,58 @@ void handle_get_program(AsyncWebServerRequest *request) {
     request->send(200, "application/json", output);
 }
 
+/**
+ * @brief Zwraca aktualną konfigurację reagentów w formacie JSON.
+ */
+void handle_get_reagent_config(AsyncWebServerRequest *request) {
+    DynamicJsonDocument doc(1024);
+    JsonObject reagents_obj = doc.to<JsonObject>();
+    
+    for (int i = 0; i < Program::kMaxReagents; i++) {
+        reagents_obj[String(i + 1)] = String(program.reagents[i]);
+    }
+    
+    String output;
+    serializeJson(doc, output);
+    request->send(200, "application/json", output);
+}
+
+/**
+ * @brief Zapisuje nową konfigurację reagentów.
+ */
+void handle_save_reagent_config(AsyncWebServerRequest *request) {
+    if (request->hasParam("config", true)) {
+        String config_json = request->getParam("config", true)->value();
+        
+        DynamicJsonDocument doc(1024);
+        DeserializationError error = deserializeJson(doc, config_json);
+        
+        if (error) {
+            request->send(400, "text/plain", "Invalid JSON");
+            return;
+        }
+        
+        // Aktualizuj nazwy reagentów
+        for (int i = 0; i < Program::kMaxReagents; i++) {
+            String key = String(i + 1);
+            if (doc.containsKey(key)) {
+                String reagent_name = doc[key].as<String>();
+                strncpy(program.reagents[i], reagent_name.c_str(), Program::kMaxReagentNameLen - 1);
+                program.reagents[i][Program::kMaxReagentNameLen - 1] = '\0'; // Zapewnij null-termination
+            }
+        }
+        
+        // Zapisz do pliku
+        if (program.saveReagentConfigToFile()) {
+            request->send(200, "text/plain", "Reagent configuration saved successfully");
+        } else {
+            request->send(500, "text/plain", "Failed to save reagent configuration");
+        }
+    } else {
+        request->send(400, "text/plain", "Missing config parameter");
+    }
+}
+
 
 void handle_not_found(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
@@ -202,6 +254,10 @@ void setup_web_server() {
         NULL, 
         handle_program_upload
     );
+
+    // Endpointy do obsługi konfiguracji reagentów
+    server.on("/api/reagent-config/get", HTTP_GET, handle_get_reagent_config);
+    server.on("/api/reagent-config/save", HTTP_POST, handle_save_reagent_config);
 
     // --- Jawne serwowanie plików interfejsu ---
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){

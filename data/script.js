@@ -16,8 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusPumpVolume = document.getElementById('status-pump-volume');
     const statusPumpDirection = document.getElementById('status-pump-direction');
     const statusProgram = document.getElementById('status-program');
-    const reagentValveSelect = document.getElementById('reagent-valve-select');
-    const columnValveSelect = document.getElementById('column-valve-select');
     const btnSetValves = document.getElementById('btn-set-valves');
     const pumpFlowRateInput = document.getElementById('pump-flow-rate-input');
     const pumpAccelInput = document.getElementById('pump-accel-input');
@@ -27,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnReversePump = document.getElementById('btn-reverse-pump');
     const programCard = document.querySelector('.program-view').closest('.card');
     const progReagent = document.getElementById('prog-reagent');
-    const progColumn = document.getElementById('prog-column');
     const progFlowRate = document.getElementById('prog-flow-rate');
     const progFlushDuration = document.getElementById('prog-flush-duration');
     const btnAddFlushStep = document.getElementById('btn-add-flush-step');
@@ -46,17 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalBody = document.getElementById('modal-body');
     const btnSaveChanges = document.getElementById('btn-save-changes');
     const btnCancelEdit = document.getElementById('btn-cancel-edit');
+    const btnOpenConfig = document.getElementById('btn-open-config');
+    const configModal = document.getElementById('config-modal');
+    const btnSaveConfig = document.getElementById('btn-save-config');
+    const btnCancelConfig = document.getElementById('btn-cancel-config');
 
     // --- WALIDACJA PÓL INPUT ---
     const inputsToValidate = [
         // Pola sterowania ręcznego
-        reagentValveSelect,
-        columnValveSelect,
         pumpFlowRateInput,
         pumpAccelInput,
         // Pola edytora programu
-        progReagent,
-        progColumn,
         progFlowRate,
         progFlushDuration,
         progWaitDuration
@@ -87,6 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- FUNKCJE POMOCNICZE ---
+    let reagentNames = {}; // Cache nazw reagentów
+
     function translateValveState(state) {
         switch (state) {
             case 0: return "Bezczynny";
@@ -128,6 +127,168 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Could not load program from device on startup:", error);
         }
+    }
+
+    /**
+     * @brief Pobiera konfigurację reagentów z urządzenia.
+     */
+    async function loadReagentConfigFromServer() {
+        try {
+            const response = await fetch('/api/reagent-config/get');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const config = await response.json();
+            reagentNames = config;
+            console.log("Reagent configuration loaded from device.");
+            updateReagentSelectOptions();
+        } catch (error) {
+            console.error("Could not load reagent configuration from device:", error);
+        }
+    }
+
+    /**
+     * @brief Aktualizuje opcje w select elementach z nazwami reagentów.
+     */
+    function updateReagentSelectOptions() {
+        const select = document.getElementById('prog-reagent');
+        if (!select) return;
+
+        // Wyczyść istniejące opcje
+        select.innerHTML = '';
+
+        // Dodaj nowe opcje z nazwami reagentów
+        for (let i = 0; i < 6; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = getReagentName(i);
+            select.appendChild(option);
+        }
+    }
+
+    /**
+     * @brief Otwiera modal konfiguracji reagentów i wypełnia aktualnymi wartościami.
+     */
+    function openConfigModal() {
+        // Wypełnij pola aktualnymi nazwami reagentów
+        for (let i = 1; i <= 6; i++) {
+            const input = document.getElementById(`reagent-${i}`);
+            if (input) {
+                input.value = reagentNames[i] || `Reagent_${i}`;
+            }
+        }
+        configModal.style.display = 'flex';
+    }
+
+    /**
+     * @brief Zamyka modal konfiguracji reagentów.
+     */
+    function closeConfigModal() {
+        configModal.style.display = 'none';
+    }
+
+    /**
+     * @brief Zapisuje konfigurację reagentów na serwerze.
+     */
+    async function saveReagentConfig() {
+        const config = {};
+        for (let i = 1; i <= 6; i++) {
+            const input = document.getElementById(`reagent-${i}`);
+            if (input) {
+                config[i] = input.value.trim() || `Reagent_${i}`;
+            }
+        }
+
+        try {
+            const response = await fetch('/api/reagent-config/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    config: JSON.stringify(config)
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.text();
+            console.log("Reagent configuration saved:", result);
+            
+            // Aktualizuj cache
+            reagentNames = config;
+            
+            // Zamknij modal
+            closeConfigModal();
+            
+            // Odśwież listę kroków aby pokazać nowe nazwy
+            renderProgramList();
+            
+            // Aktualizuj opcje w select elementach
+            updateReagentSelectOptions();
+            
+        } catch (error) {
+            console.error("Error saving reagent configuration:", error);
+            alert("Błąd podczas zapisywania konfiguracji reagentów.");
+        }
+    }
+
+    /**
+     * @brief Zwraca nazwę reagenta dla danego ID.
+     */
+    function getReagentName(reagentId) {
+        const id = reagentId + 1; // Konwertuj z 0-based na 1-based
+        return reagentNames[id] || `Reagent_${id}`;
+    }
+
+    /**
+     * @brief Obsługuje kliknięcie przycisku zaworu.
+     */
+    function handleValveButtonClick(buttonGroupId, clickedButton) {
+        console.log('Valve button clicked:', buttonGroupId, clickedButton.dataset.valve);
+        const buttonGroup = document.getElementById(buttonGroupId);
+        if (!buttonGroup) {
+            console.error('Button group not found:', buttonGroupId);
+            return;
+        }
+
+        // Sprawdź czy to wielokrotny wybór
+        if (clickedButton.classList.contains('multi-select')) {
+            // Toggle selection dla wielokrotnego wyboru
+            clickedButton.classList.toggle('selected');
+        } else {
+            // Pojedynczy wybór - usuń wszystkie i wybierz jeden
+            buttonGroup.querySelectorAll('.valve-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            clickedButton.classList.add('selected');
+        }
+    }
+
+
+
+    /**
+     * @brief Pobiera wszystkie wybrane wartości zaworów z grupy przycisków.
+     */
+    function getSelectedValveValues(buttonGroupId) {
+        const buttonGroup = document.getElementById(buttonGroupId);
+        if (!buttonGroup) return [];
+
+        const selectedButtons = buttonGroup.querySelectorAll('.valve-btn.selected');
+        return Array.from(selectedButtons).map(btn => parseInt(btn.dataset.valve));
+    }
+
+    /**
+     * @brief Pobiera wybraną wartość zaworu z grupy przycisków.
+     */
+    function getSelectedValveValue(buttonGroupId) {
+        const buttonGroup = document.getElementById(buttonGroupId);
+        if (!buttonGroup) return 0;
+
+        const selectedButton = buttonGroup.querySelector('.valve-btn.selected');
+        return selectedButton ? parseInt(selectedButton.dataset.valve) : 0;
     }
 
     async function updateStatus() {
@@ -182,7 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const listItem = document.createElement('li');
             let description = '';
             if (step.type === 'flush') {
-                description = `Krok ${index + 1}: Płukanie. Reagent: <b>${step.reagent + 1}</b> Kolumna: <b>${step.column + 1}</b> Przepływ: <b>${step.pump_speed} ml/min</b> Czas: <b>${step.duration_ms / 1000}s</b>`;
+                const reagentName = getReagentName(step.reagent);
+                description = `Krok ${index + 1}: Płukanie. Reagent: <b>${reagentName}</b> Kolumna: <b>${step.column + 1}</b> Przepływ: <b>${step.pump_speed} ml/min</b> Czas: <b>${step.duration_ms / 1000}s</b>`;
             } else if (step.type === 'wait') {
                 description = `Krok ${index + 1}: Czekaj. Czas: <b>${step.duration_ms / 1000}s</b>`;
             }
@@ -276,12 +438,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (step.type === 'flush') {
             formHtml = `
                 <div class="form-group">
-                    <label for="edit-reagent">Reagent (1-6)</label>
-                    <input type="number" id="edit-reagent" min="1" max="6" value="${step.reagent + 1}">
+                    <label for="edit-reagent">Reagent</label>
+                    <select id="edit-reagent">
+                        ${Array.from({length: 6}, (_, i) => 
+                            `<option value="${i}" ${i === step.reagent ? 'selected' : ''}>${getReagentName(i)}</option>`
+                        ).join('')}
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="edit-column">Kolumna (1-6)</label>
-                    <input type="number" id="edit-column" min="1" max="6" value="${step.column + 1}">
+                    <label>Kolumna:</label>
+                    <div class="button-grid" id="edit-column-buttons">
+                        ${Array.from({length: 6}, (_, i) => 
+                            `<button class="valve-btn ${i === step.column ? 'selected' : ''}" data-valve="${i}">${i + 1}</button>`
+                        ).join('')}
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="edit-flow-rate">Przepływ (ml/min)</label>
@@ -303,6 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
         modalBody.innerHTML = formHtml;
         editModal.style.display = 'flex';
 
+        // Event listeners dla przycisków w modalu są obsługiwane przez delegację zdarzeń
+
         // Dodaj walidację do dynamicznie utworzonych pól w modalu
         const modalInputs = modalBody.querySelectorAll('input[type="number"]');
         modalInputs.forEach(input => {
@@ -320,8 +492,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const step = currentProgram[editingStepIndex];
         if (step.type === 'flush') {
-            step.reagent = parseInt(document.getElementById('edit-reagent').value) - 1;
-            step.column = parseInt(document.getElementById('edit-column').value) - 1;
+            step.reagent = parseInt(document.getElementById('edit-reagent').value);
+            step.column = getSelectedValveValue('edit-column-buttons');
             step.pump_speed = parseFloat(document.getElementById('edit-flow-rate').value);
             step.duration_ms = parseInt(document.getElementById('edit-duration').value) * 1000;
         } else if (step.type === 'wait') {
@@ -335,14 +507,28 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCancelEdit.addEventListener('click', closeEditModal);
 
     btnAddFlushStep.addEventListener('click', () => {
-        const newStep = {
-            type: 'flush',
-            reagent: parseInt(progReagent.value) - 1,
-            column: parseInt(progColumn.value) - 1,
-            pump_speed: parseFloat(progFlowRate.value),
-            duration_ms: parseInt(progFlushDuration.value) * 1000
-        };
-        currentProgram.push(newStep);
+        const selectedColumns = getSelectedValveValues('prog-column-buttons');
+        
+        if (selectedColumns.length === 0) {
+            alert('Proszę wybrać przynajmniej jedną kolumnę.');
+            return;
+        }
+
+        // Sortuj kolumny według numeracji
+        selectedColumns.sort((a, b) => a - b);
+
+        // Utwórz osobny krok dla każdej wybranej kolumny
+        selectedColumns.forEach(columnId => {
+            const newStep = {
+                type: 'flush',
+                reagent: parseInt(progReagent.value),
+                column: columnId,
+                pump_speed: parseFloat(progFlowRate.value),
+                duration_ms: parseInt(progFlushDuration.value) * 1000
+            };
+            currentProgram.push(newStep);
+        });
+
         renderProgramList();
     });
 
@@ -461,8 +647,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- EVENT LISTENERS (Sterowanie ręczne) ---
     btnSetValves.addEventListener('click', () => {
-        const reagentId = parseInt(reagentValveSelect.value) - 1;
-        const columnId = parseInt(columnValveSelect.value) - 1;
+        console.log('Set valves button clicked');
+        const reagentId = getSelectedValveValue('reagent-valve-buttons');
+        const columnId = getSelectedValveValue('column-valve-buttons');
+        console.log('Selected valves:', reagentId, columnId);
         sendCommand('/api/manual/valves', {
             reagent_valve_id: reagentId,
             column_valve_id: columnId
@@ -470,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnSetPump.addEventListener('click', () => {
+        console.log('Set pump button clicked');
         sendCommand('/api/manual/pump', {
             pump_cmd: pumpFlowRateInput.value,
             acceleration: pumpAccelInput.value
@@ -490,6 +679,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Event listeners dla konfiguracji reagentów
+    btnOpenConfig.addEventListener('click', openConfigModal);
+    btnSaveConfig.addEventListener('click', saveReagentConfig);
+    btnCancelConfig.addEventListener('click', closeConfigModal);
+
+    // Zamykanie modali przez kliknięcie poza nimi
+    configModal.addEventListener('click', (event) => {
+        if (event.target === configModal) {
+            closeConfigModal();
+        }
+    });
+
+    editModal.addEventListener('click', (event) => {
+        if (event.target === editModal) {
+            closeEditModal();
+        }
+    });
+
+    // Debug: sprawdź czy wszystkie elementy są znalezione
+    console.log('Elements found:', {
+        pumpFlowRateInput: !!pumpFlowRateInput,
+        pumpAccelInput: !!pumpAccelInput,
+        btnSetPump: !!btnSetPump,
+        btnSetValves: !!btnSetValves,
+        progReagent: !!progReagent,
+        progFlowRate: !!progFlowRate,
+        progFlushDuration: !!progFlushDuration,
+        btnAddFlushStep: !!btnAddFlushStep
+    });
+
+    // Debug: sprawdź przyciski zaworów
+    console.log('Valve buttons found:', {
+        reagentButtons: document.querySelectorAll('#reagent-valve-buttons .valve-btn').length,
+        columnButtons: document.querySelectorAll('#column-valve-buttons .valve-btn').length,
+        progColumnButtons: document.querySelectorAll('#prog-column-buttons .valve-btn').length
+    });
+
     // Inicjalizacja
     sortable = new Sortable(programStepsList, {
         animation: 150,
@@ -504,8 +730,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(updateStatus, 1000);
     
-    // Pobierz program z serwera przy starcie, a następnie zaktualizuj status
-    loadProgramFromServer().then(() => {
-        updateStatus(); 
+    // Event listeners dla przycisków zaworów - bezpośrednie dodanie
+    document.querySelectorAll('.valve-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            console.log('Valve button clicked directly');
+            const buttonGroup = event.target.closest('.button-grid');
+            if (buttonGroup) {
+                const buttonGroupId = buttonGroup.id;
+                handleValveButtonClick(buttonGroupId, event.target);
+            }
+        });
+    });
+
+
+    
+    // Pobierz program i konfigurację reagentów z serwera przy starcie
+    Promise.all([
+        loadProgramFromServer(),
+        loadReagentConfigFromServer()
+    ]).then(() => {
+        updateStatus();
     });
 });

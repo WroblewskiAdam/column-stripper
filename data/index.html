@@ -62,14 +62,30 @@
                 <div class="manual-controls-container">
                     <div class="control-group">
                         <h3>Zawory</h3>
-                        <div class="input-row">
-                            <div class="valve-control">
-                                <label for="reagent-valve-select">Zawór reagentów (Port 1-6)</label>
-                                <input type="number" id="reagent-valve-select" min="1" max="6" value="1">
-                            </div>
-                            <div class="valve-control">
-                                <label for="column-valve-select">Zawór kolumn (Port 1-6)</label>
-                                <input type="number" id="column-valve-select" min="1" max="6" value="1">
+                        <div class="valve-controls-wrapper">
+                            <div class="valve-selection">
+                                <div class="valve-group">
+                                    <label>Zawór reagentów:</label>
+                                    <div class="button-grid" id="reagent-valve-buttons">
+                                        <button class="valve-btn selected" data-valve="0">1</button>
+                                        <button class="valve-btn" data-valve="1">2</button>
+                                        <button class="valve-btn" data-valve="2">3</button>
+                                        <button class="valve-btn" data-valve="3">4</button>
+                                        <button class="valve-btn" data-valve="4">5</button>
+                                        <button class="valve-btn" data-valve="5">6</button>
+                                    </div>
+                                </div>
+                                <div class="valve-group">
+                                    <label>Zawór kolumn:</label>
+                                    <div class="button-grid" id="column-valve-buttons">
+                                        <button class="valve-btn selected" data-valve="0">1</button>
+                                        <button class="valve-btn" data-valve="1">2</button>
+                                        <button class="valve-btn" data-valve="2">3</button>
+                                        <button class="valve-btn" data-valve="3">4</button>
+                                        <button class="valve-btn" data-valve="4">5</button>
+                                        <button class="valve-btn" data-valve="5">6</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="button-group">
@@ -78,14 +94,16 @@
                     </div>
                     <div class="control-group">
                         <h3>Pompa</h3>
-                        <div class="input-row">
-                             <div class="pump-control-item">
-                                <label for="pump-flow-rate-input">Przepływ (ml/min)</label>
-                                <input type="number" id="pump-flow-rate-input" step="0.1" min="-10.0" max="10.0" value="5.0">
-                            </div>
-                            <div class="pump-control-item">
-                                <label for="pump-accel-input">Przyspieszenie (0.1-10)</label>
-                                <input type="number" id="pump-accel-input" step="0.5" min="0.1" max="10.0" value="10.0">
+                        <div class="pump-controls-wrapper">
+                            <div class="input-row">
+                                 <div class="pump-control-item">
+                                    <label for="pump-flow-rate-input">Przepływ (ml/min)</label>
+                                    <input type="number" id="pump-flow-rate-input" step="0.1" min="-10.0" max="10.0" value="5.0">
+                                </div>
+                                <div class="pump-control-item">
+                                    <label for="pump-accel-input">Przyspieszenie (0.1-10)</label>
+                                    <input type="number" id="pump-accel-input" step="0.5" min="0.1" max="10.0" value="10.0">
+                                </div>
                             </div>
                         </div>
                         <div class="button-group">
@@ -100,7 +118,10 @@
             <div class="card">
                 <h2>Program Sekwencji</h2>
                 <div class="program-view">
-                    <h3>Aktualny program</h3>
+                    <div class="program-header">
+                        <h3>Aktualny program</h3>
+                        <button id="btn-open-config" class="config-btn" title="Konfiguracja reagentów">⚙️</button>
+                    </div>
                     <div class="button-group program-controls">
                         <button id="btn-run-program">Wyślij i uruchom program</button>
                         <button id="btn-stop-program">Zatrzymaj program</button>
@@ -116,11 +137,25 @@
                             <div class="form-row">
                                 <div class="form-group compact">
                                     <label for="prog-reagent">Reagent</label>
-                                    <input type="number" id="prog-reagent" min="1" max="6" value="1">
+                                    <select id="prog-reagent">
+                                        <option value="0">Reagent_1</option>
+                                        <option value="1">Reagent_2</option>
+                                        <option value="2">Reagent_3</option>
+                                        <option value="3">Reagent_4</option>
+                                        <option value="4">Reagent_5</option>
+                                        <option value="5">Reagent_6</option>
+                                    </select>
                                 </div>
                                 <div class="form-group compact">
-                                    <label for="prog-column">Kolumna</label>
-                                    <input type="number" id="prog-column" min="1" max="6" value="1">
+                                    <label>Kolumny (wybierz wiele):</label>
+                                    <div class="button-grid" id="prog-column-buttons">
+                                        <button class="valve-btn multi-select" data-valve="0">1</button>
+                                        <button class="valve-btn multi-select" data-valve="1">2</button>
+                                        <button class="valve-btn multi-select" data-valve="2">3</button>
+                                        <button class="valve-btn multi-select" data-valve="3">4</button>
+                                        <button class="valve-btn multi-select" data-valve="4">5</button>
+                                        <button class="valve-btn multi-select" data-valve="5">6</button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -170,6 +205,45 @@
             <div class="button-group">
                 <button id="btn-save-changes">Zapisz zmiany</button>
                 <button id="btn-cancel-edit">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do konfiguracji reagentów -->
+    <div id="config-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Konfiguracja Nazw Reagentów</h3>
+            <div id="config-body">
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="reagent-1">Reagent 1:</label>
+                        <input type="text" id="reagent-1" maxlength="39" placeholder="np. NaCl">
+                    </div>
+                    <div class="form-group">
+                        <label for="reagent-2">Reagent 2:</label>
+                        <input type="text" id="reagent-2" maxlength="39" placeholder="np. H2O">
+                    </div>
+                    <div class="form-group">
+                        <label for="reagent-3">Reagent 3:</label>
+                        <input type="text" id="reagent-3" maxlength="39" placeholder="np. EtOH">
+                    </div>
+                    <div class="form-group">
+                        <label for="reagent-4">Reagent 4:</label>
+                        <input type="text" id="reagent-4" maxlength="39" placeholder="np. Aceton">
+                    </div>
+                    <div class="form-group">
+                        <label for="reagent-5">Reagent 5:</label>
+                        <input type="text" id="reagent-5" maxlength="39" placeholder="np. Metanol">
+                    </div>
+                    <div class="form-group">
+                        <label for="reagent-6">Reagent 6:</label>
+                        <input type="text" id="reagent-6" maxlength="39" placeholder="np. DMSO">
+                    </div>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="btn-save-config">Zapisz Konfigurację</button>
+                <button id="btn-cancel-config">Anuluj</button>
             </div>
         </div>
     </div>

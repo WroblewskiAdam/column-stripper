@@ -96,6 +96,7 @@ void setup() {
   
   device.initialize();
   program.loadFromFile();
+  program.loadReagentConfigFromFile();
 
   setup_wifi();
   setup_web_server();

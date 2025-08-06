@@ -82,32 +82,43 @@ header h1 {
     display: flex;
     gap: 24px;
     flex-wrap: wrap;
+    align-items: stretch; 
 }
 
+/* === POCZĄTEK GŁÓWNEJ POPRAWKI === */
 .control-group {
     flex: 1;
     min-width: 280px;
-    display: flex;
-    flex-direction: column;
+    display: grid; /* Zmienione z flex na grid */
+    grid-template-rows: auto 1fr auto; /* Definicja 3 wierszy: góra, środek (rozciągnięty), dół */
+    gap: 16px; /* Zastępuje ręczne marginesy */
 }
 
 .control-group h3 {
-    margin-bottom: 8px; /* Zmniejszony odstęp */
+    /* usunięto margin-bottom, obsłużone przez gap */
     font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 0;
 }
+
+.control-group .button-group {
+    /* usunięto margin-top, obsłużone przez gap */
+    margin-top: 0;
+}
+/* === KONIEC GŁÓWNEJ POPRAWKI === */
+
 
 .input-row {
     display: flex;
     gap: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 0;
+    align-items: flex-start;
 }
 
 .valve-control, .pump-control-item {
     flex: 1;
-}
-
-.control-group .button-group {
-    margin-top: auto; /* Wypycha przyciski na dół */
+    display: flex;
+    flex-direction: column;
 }
 
 label {
@@ -115,7 +126,9 @@ label {
     color: var(--label-color);
     font-size: 0.875em;
     font-weight: 500;
-    display: block; /* Upewnij się, że label jest blokiem */
+    display: flex;
+    align-items: center;
+    height: 20px;
 }
 
 input[type="number"] {
@@ -128,9 +141,17 @@ input[type="number"] {
     box-sizing: border-box;
     font-size: 1em;
     transition: border-color 0.2s, box-shadow 0.2s;
+    height: 42px;
+    line-height: 20px;
 }
 
 input[type="number"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.valve-selection .valve-btn:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
@@ -141,7 +162,7 @@ input[type="number"]:focus {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
-    align-items: stretch; /* Nowa właściwość zapewniająca równą wysokość */
+    align-items: stretch;
 }
 
 .button-group button {
@@ -159,6 +180,11 @@ button {
     font-size: 0.9em;
     font-weight: 500;
     transition: background-color 0.2s, transform 0.1s;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 button:hover {
@@ -188,9 +214,9 @@ button:active {
 
 #program-steps-list li {
     background-color: #374151;
-    padding: 12px 16px;
+    padding: 8px 12px;
     border-radius: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     border: 1px solid #4b5563;
     font-size: 0.9em;
     position: relative;
@@ -201,11 +227,16 @@ button:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+}
+
+#program-steps-list li .step-actions {
+    display: flex;
+    gap: 6px;
 }
 
 #program-steps-list li .step-actions button {
-    margin-left: 8px;
+    margin-left: 0;
 }
 
 #program-steps-list li.active-step {
@@ -231,9 +262,14 @@ button:active {
 
 .btn-delete, .btn-edit {
     background-color: #6b7280;
-    font-size: 0.8em;
-    padding: 6px 12px;
+    font-size: 0.75em;
+    padding: 2px 6px;
     z-index: 1;
+    width: 50px;
+    height: 24px;
+    text-align: center;
+    line-height: 20px;
+    box-sizing: border-box;
 }
 .btn-delete:hover, .btn-edit:hover {
     background-color: #4b5563;
@@ -398,4 +434,220 @@ button:active {
 }
 #btn-clear-program:hover {
     background-color: #4b5563;
+}
+
+/* Style dla konfiguracji reagentów */
+.program-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.program-header h3 {
+    margin: 0;
+}
+
+.config-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.config-btn:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.config-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.config-form .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.config-form label {
+    margin-bottom: 8px;
+    color: var(--label-color);
+    font-weight: 500;
+}
+
+.config-form input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.config-form input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.config-form input[type="text"]::placeholder {
+    color: var(--label-color);
+    opacity: 0.7;
+}
+
+/* Style dla przycisków zaworów */
+.valve-selection {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    align-items: flex-start;
+    margin-bottom: 0;
+}
+
+
+.valve-controls-wrapper,
+.pump-controls-wrapper {
+    /* flex-grow został usunięty, ponieważ grid-template-rows w .control-group przejął tę funkcję */
+    margin-bottom: 0; /* Obsłużone przez gap w .control-group */
+}
+
+
+.valve-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1; 
+    justify-content: flex-start;
+}
+
+.valve-group label {
+    color: var(--label-color);
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 0; /* Zmieniono z 8px, teraz odstęp kontroluje gap w .valve-group */
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+}
+
+/* Specjalne style dla sekcji ręcznej - mniejsze przyciski */
+.valve-selection .button-grid {
+    gap: 2px;
+}
+
+.valve-selection .valve-btn {
+    padding: 10px 12px;
+    font-size: 1em;
+    min-width: 30px;
+    height: 42px;
+    box-sizing: border-box;
+    border: 1px solid #4b5563;
+    border-radius: 8px;
+    background-color: #374151;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    text-align: center;
+    line-height: 20px;
+}
+
+/* Specjalne style dla edytora programu - przyciski kolumn dopasowane do select */
+.add-step-section .button-grid {
+    gap: 3px;
+}
+
+.add-step-section .valve-btn {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-width: 35px;
+    border-radius: 8px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 20px;
+    box-sizing: border-box;
+}
+
+.valve-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    text-align: center;
+}
+
+.valve-btn:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.valve-btn.selected {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.valve-btn.selected:hover {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
+
+/* Style dla select elementów */
+select {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    cursor: pointer;
+    height: 42px;
+    line-height: 20px;
+    box-sizing: border-box;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+select option {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Style dla wielokrotnego wyboru kolumn */
+.valve-btn.multi-select {
+    cursor: pointer;
+}
+
+.valve-btn.multi-select.selected {
+    background-color: #059669;
+    border-color: #10b981;
+    color: white;
+}
+
+.valve-btn.multi-select:hover {
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px #10b981;
 }

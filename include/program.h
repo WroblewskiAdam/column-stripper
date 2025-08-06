@@ -8,6 +8,7 @@
 
 constexpr float kDefaultPumpAcceleration = 5.0;
 const char* PROGRAM_FILENAME = "/program.bin";
+const char* REAGENT_CONFIG_FILENAME = "/reagent_config.bin";
 
 struct ProgramStep {
     uint8_t reagent_valve_id; // set any of valve ids to 0xff to keep the current valve positions
@@ -56,6 +57,48 @@ class Program {
     }
     void set_columns(uint8_t* buffer) {
       memcpy(columns, buffer, sizeof(columns));
+    }
+
+    /**
+     * @brief Zapisuje konfigurację reagentów do pliku w systemie LittleFS.
+     * @return true jeśli zapis się powiódł, false w przeciwnym razie.
+     */
+    bool saveReagentConfigToFile() {
+        File file = LittleFS.open(REAGENT_CONFIG_FILENAME, "w");
+        if (!file) {
+            Serial.println("Failed to open reagent config file for writing");
+            return false;
+        }
+        // Zapisz tablicę nazw reagentów
+        file.write((uint8_t*)reagents, sizeof(reagents));
+        file.close();
+        Serial.println("Reagent configuration saved to file.");
+        return true;
+    }
+
+    /**
+     * @brief Wczytuje konfigurację reagentów z pliku w systemie LittleFS.
+     * @return true jeśli odczyt się powiódł, false w przeciwnym razie.
+     */
+    bool loadReagentConfigFromFile() {
+        if (!LittleFS.exists(REAGENT_CONFIG_FILENAME)) {
+            Serial.println("Reagent config file not found. Using default names.");
+            // Ustaw domyślne nazwy reagentów
+            for (int i = 0; i < kMaxReagents; i++) {
+                snprintf(reagents[i], kMaxReagentNameLen, "Reagent_%d", i + 1);
+            }
+            return false;
+        }
+        File file = LittleFS.open(REAGENT_CONFIG_FILENAME, "r");
+        if (!file) {
+            Serial.println("Failed to open reagent config file for reading");
+            return false;
+        }
+        // Odczytaj tablicę nazw reagentów
+        file.read((uint8_t*)reagents, sizeof(reagents));
+        file.close();
+        Serial.println("Reagent configuration loaded from file.");
+        return true;
     }
 
     /**
